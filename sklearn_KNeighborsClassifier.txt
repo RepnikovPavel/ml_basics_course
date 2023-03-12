@@ -1,0 +1,126 @@
+# simplest k neighbors classifier 
+import sklearn
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.datasets import load_breast_cancer
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+
+random_seed = 4238
+np.random.seed(random_seed)
+
+X, y = load_breast_cancer(return_X_y=True)
+X_train, x_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, shuffle=True, random_state=42
+)
+
+clf = KNeighborsClassifier(n_neighbors=8, p=1)
+clf.fit(X_train, y_train)
+
+predictions = clf.predict(x_test)
+acc = accuracy_score(y_true=y_test,y_pred=predictions)
+f1 = sklearn.metrics.f1_score(y_true=y_test,y_pred=predictions)
+
+print(acc)
+print(f1)
+
+
+# find best k 
+import sklearn
+import numpy as np
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import cross_val_score
+from sklearn.neighbors import KNeighborsClassifier
+
+random_seed = 4238
+
+np.random.seed(random_seed)
+n_splits = 3
+
+from sklearn.datasets import load_breast_cancer
+
+X, y = load_breast_cancer(return_X_y=True)
+
+"""
+  Здесь Вам предлагается написать тело цикла для подбора оптимального K
+  Результаты оценки алгоритма при каждом отдельно взятом K рекомендуем записывать в список cv_scores
+"""
+cv = sklearn.model_selection.KFold(n_splits=n_splits)
+print('cv = {}'.format(cv))
+cv_scores = []
+for k in range(1, 51):
+    print('{}/{}'.format(k,50))
+    clf = KNeighborsClassifier(n_neighbors=k)
+    score_list = sklearn.model_selection.cross_val_score(estimator=clf,X=X,y=y,cv=cv)
+    print(score_list)
+    best_score = np.mean(score_list)
+    print('score={}'.format(best_score))
+    cv_scores.append(best_score)
+
+print('k={}'.format(np.argmax(cv_scores)+1))
+
+# hand made of KNN
+import numpy as np
+
+class KNN_classifier:
+    def __init__(self, n_neighbors: int, **kwargs):
+        self.buffer_for_sorting = None
+        self.ref_y = None
+        self.ref_x = None
+        self.N = None
+        self.n = None
+        self.num_of_classes = None
+        self.unique_labels = None
+        self.K = n_neighbors
+
+    def fit(self, x: np.array, y: np.array):
+        '''
+        N =  size of sample
+        xi_ith \in R^n
+        sample= [
+            xi_1,
+            xi_2,
+            ...
+            xi_N
+        ]
+        x= [
+            [x_11,x_12,...,x_1n],
+            [x_21,x_22,...,x_2n],
+            ...
+            [x_N1,x_N2,...,x_Nn]
+        ]
+        y= [
+          label1,
+          label2,
+          ...
+          label3
+        ]
+
+        '''
+        self.unique_labels = np.unique(y)
+        self.num_of_classes = len(self.unique_labels)
+        self.n = x.shape[1]
+        self.N = x.shape[0]
+        self.ref_x = x
+        self.ref_y = y
+        self.buffer_for_sorting = np.zeros(shape=(self.N,))
+
+    def predict(self, x: np.array):
+        predictions = []
+        for i in range(x.shape[0]):
+            # sort all data by distance relative to a given point
+            point = x[i]
+            # dist func np.linalg.norm
+            for j in range(self.N):
+                self.buffer_for_sorting[j] = np.linalg.norm(point - self.ref_x[j])
+            indxs_with_nearest_points_in_ref_data = np.argsort(self.buffer_for_sorting)
+
+            label_used = []
+            for j in range(self.K):
+                nearest_neighbor_index = indxs_with_nearest_points_in_ref_data[j]
+                nearest_neighbor_label = self.ref_y[nearest_neighbor_index]
+                label_used.append(nearest_neighbor_label)
+            prediction = np.bincount(label_used).argmax()
+            predictions.append(prediction)
+        predictions = np.array(predictions)
+        return predictions
